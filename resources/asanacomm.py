@@ -181,7 +181,7 @@ class Asanacomm:
         with open(file_path, 'w') as out:
             out.write(f'# Progress report for {self.start_date}\n\n')
 
-            out.write('This is the progress report for the team working on')
+            out.write('This is the progress report for the team working on ')
             out.write(f'the {self.report["project"]} project.\n\n')
 
             out.write('## Completed Tasks\n\n')
