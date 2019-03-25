@@ -15,17 +15,24 @@ class Asanacomm:
     '''
 
     def __init__(self, token, workspace_name, output_directory):
-        self.client = self.init_client(token)
-        self.workspace_id = self.fetch_workspace_id(workspace_name)
         self.output_directory = Path(output_directory)
+
+        print('Connecting to Asana...')
+        self.client = self.init_client(token)
+
+        print('\tGathering workspace information.')
+        self.workspace = workspace_name
+        self.workspace_id = self.fetch_workspace_id(workspace_name)
 
         if not self.workspace_id:
             raise ValueError(f'There is no "{workspace_name}" workspace.')
 
+        print('\tGathering projects.')
         self.projects = self.fetch_projects()
 
+        print('Kathana initialization complete.\n')
+
     def init_client(self, token):
-        print('Connecting to Asana...')
         client = asana.Client.access_token(token)
         client.options['client_name'] = 'Kathana'
 
@@ -39,8 +46,6 @@ class Asanacomm:
         Parameters:
             workspace_name <str> String name of the workspace
         '''
-        print('Fetching workspace id')
-
         all_workspaces = self.client.workspaces.find_all()
 
         for workspace in all_workspaces:
@@ -53,8 +58,6 @@ class Asanacomm:
         '''
         Fetches the id and gid of all projects in the supplied workspace.
         '''
-        print('Fetching projects')
-
         return self.client.projects.find_all(
                 {
                     'workspace': self.workspace_id,
@@ -72,7 +75,7 @@ class Asanacomm:
         print('Fetching workspace tasks')
 
         for project in self.projects:
-            print(f'Fetching tasks in {project["name"]}')
+            print(f'\tFetching tasks in {project["name"]}')
             yield self.fetch_project_tasks(project['gid'], since)
 
     def fetch_project_tasks(self, project_id, since):
@@ -128,11 +131,12 @@ class Asanacomm:
         if not Path.exists(file_path):
             Path.touch(file_path, exist_ok=True)
 
-        print('Generating report...')
+        print('Gathering report data...')
         report_data = self.fetch_workspace_tasks(start_date)
 
         report = {
                     'date': start_date,
+                    'project': self.workspace,
                     'completed': [],
                     'planned': []
                  }
@@ -147,9 +151,13 @@ class Asanacomm:
                     'due_on': task['due_on']})
 
         print('Done!')
-        print('Writing report to file...')
+
+        print('\nWriting report to file...')
         with open(file_path, 'w') as out:
             out.write(f'# Progress report for {start_date}\n\n')
+
+            out.write(f'This is the progress report for the team working on \
+                        the {report["project"]} project.\n\n')
 
             out.write('## Completed Tasks\n\n')
 
@@ -160,9 +168,12 @@ class Asanacomm:
             out.write('## Planned Tasks\n\n')
 
             for task in report['planned']:
-                out.write(f'### {task["name"]}\n\n')
                 if task["due_on"]:
-                    out.write(f'> Due on: task["due_on"]\n')
-                out.write(f'task["description"]\n\n')
+                    out.write(f'\n### {task["name"]}\n\n')
+                    out.write(f'> Due: {task["due_on"]}\n\n')
+                    out.write(f'{task["description"]}\n')
 
-        print(f'Done! Report written at {file_path}')
+            out.write('Report generated with <3 by Kathana.')
+
+        print(f'Done!')
+        print(f'\nReport written here: {Path.joinpath(Path.cwd(), file_path)}')
