@@ -122,7 +122,7 @@ class Asanacomm:
 
         return last_monday.isoformat()
 
-    def generate_report(self, start_date, out_dir):
+    def generate_report(self, out_dir, start_date=None):
         '''
         smth
         '''
