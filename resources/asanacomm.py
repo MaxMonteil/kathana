@@ -22,6 +22,8 @@ class Asanacomm:
 
         if not start_date:
             self.start_date = self.get_last_monday()
+        else:
+            self.start_date = start_date
 
         self.output_directory = Path(output_directory)
 
@@ -188,7 +190,7 @@ class Asanacomm:
 
             for task in self.report['completed']:
                 out.write(f'### {task["name"]}\n\n')
-                out.write(f'task["description"]\n\n')
+                out.write(f'{task["description"]}\n\n')
 
             out.write('## Planned Tasks\n\n')
 
