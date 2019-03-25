@@ -2,12 +2,12 @@ import os
 from resources.asanacomm import Asanacomm
 
 WORKSPACE = 'Accessibility Web Engine'
-OUT_DIR = './'
+OUT_DIR = './reports'
 
 
 def main():
     acomm = Asanacomm(os.environ['ASANA_TOKEN'], WORKSPACE, OUT_DIR,
-                      verbose=True)
+                      start_date='2019-03-18', verbose=True)
 
     acomm.generate_report()
     acomm.write_report_to_file()
