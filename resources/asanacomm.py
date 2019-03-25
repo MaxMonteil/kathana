@@ -144,7 +144,7 @@ class Asanacomm:
                 report[status].append({
                     'name': task['name'],
                     'description': task['notes'],
-                    'due': task['due_on']})
+                    'due_on': task['due_on']})
 
         print('Done!')
         print('Writing report to file...')
