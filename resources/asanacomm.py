@@ -1,24 +1,35 @@
-import datetime
+from pathlib import Path
 import asana
+import datetime
 
 
 class Asanacomm:
     '''
-    A class to handle communications with Asana.
+    A class to communicate with Asana. It fetches all the tasks in a workspace
+    upto a date and generates a markdown report.
 
     Parameters:
         token <str> Personal Access Token (PAT) of user
+        workspace_name <str> Name of the workspace to analyze
+        output_directory <str> Directory in which to ouput report
     '''
 
-    def __init__(self, token, workspace_name):
-        self.client = asana.Client.access_token(token)
-        self.client.options['client_name'] = 'kathana'
+    def __init__(self, token, workspace_name, output_directory):
+        self.client = self.init_client(token)
         self.workspace_id = self.fetch_workspace_id(workspace_name)
+        self.output_directory = Path(output_directory)
 
         if not self.workspace_id:
             raise ValueError(f'There is no "{workspace_name}" workspace.')
 
         self.projects = self.fetch_projects()
+
+    def init_client(self, token):
+        print('Connecting to Asana...')
+        client = asana.Client.access_token(token)
+        client.options['client_name'] = 'Kathana'
+
+        return client
 
     def fetch_workspace_id(self, workspace_name):
         '''
@@ -96,7 +107,7 @@ class Asanacomm:
             fields <list> String values of the data fields to return
         '''
         if not fields:
-            fields = ['id', 'gid', 'completed', 'name', 'notes']
+            fields = ['id', 'gid', 'completed', 'name', 'notes', 'due_on']
 
         return self.client.tasks.find_by_id(task_id, fields=fields)
 
@@ -110,3 +121,52 @@ class Asanacomm:
         last_monday = today - datetime.timedelta(days=today.weekday())
 
         return last_monday.isoformat()
+
+    def generate_report(self, start_date, out_dir):
+        '''
+        smth
+        '''
+        file_name = start_date.replace(" ", "") + 'report.md'
+        file_path = Path.joinpath(out_dir, file_name)
+
+        if not Path.exists(file_path):
+            Path.touch(file_path, exist_ok=True)
+
+        print('Generating report...')
+        report_data = self.fetch_workspace_tasks(start_date)
+
+        report = {
+                    'date': start_date,
+                    'completed': [],
+                    'planned': []
+                 }
+
+        for project_tasks in report_data:
+            for task in project_tasks:
+                status = 'completed' if task['completed'] else 'planned'
+
+                report[status].append({
+                    'name': task['name'],
+                    'description': task['notes'],
+                    'due': task['due_on']})
+
+        print('Done!')
+        print('Writing report to file...')
+        with open(file_path, 'w') as out:
+            out.write(f'# Progress report for {start_date}\n\n')
+
+            out.write('## Completed Tasks\n\n')
+
+            for task in report['completed']:
+                out.write(f'### {task["name"]}\n\n')
+                out.write(f'task["description"]\n\n')
+
+            out.write('## Planned Tasks\n\n')
+
+            for task in report['planned']:
+                out.write(f'### {task["name"]}\n\n')
+                if task["due_on"]:
+                    out.write(f'> Due on: task["due_on"]\n')
+                out.write(f'task["description"]\n\n')
+
+        print(f'Done! Report written at {file_path}')
