@@ -14,23 +14,24 @@ class Asanacomm:
         output_directory <str> Directory in which to ouput report
     '''
 
-    def __init__(self, token, workspace_name, output_directory):
+    def __init__(self, token, workspace_name, output_directory, v=True):
+        self.v = v
         self.output_directory = Path(output_directory)
 
-        print('Connecting to Asana...')
+        self.log('Connecting to Asana...')
         self.client = self.init_client(token)
 
-        print('\tGathering workspace information.')
+        self.log('\tGathering workspace information.')
         self.workspace = workspace_name
         self.workspace_id = self.fetch_workspace_id(workspace_name)
 
         if not self.workspace_id:
             raise ValueError(f'There is no "{workspace_name}" workspace.')
 
-        print('\tGathering projects.')
+        self.log('\tGathering projects.')
         self.projects = self.fetch_projects()
 
-        print('Kathana initialization complete.\n')
+        self.log('Kathana initialization complete.\n')
 
     def init_client(self, token):
         client = asana.Client.access_token(token)
@@ -72,10 +73,10 @@ class Asanacomm:
         Parameters:
             since <str> ISO 8601 format date, gets tasks completed since then
         '''
-        print('Fetching workspace tasks')
+        self.log('Fetching workspace tasks')
 
         for project in self.projects:
-            print(f'\tFetching tasks in {project["name"]}')
+            self.log(f'\tFetching tasks in {project["name"]}')
             yield self.fetch_project_tasks(project['gid'], since)
 
     def fetch_project_tasks(self, project_id, since):
@@ -131,7 +132,7 @@ class Asanacomm:
         if not Path.exists(file_path):
             Path.touch(file_path, exist_ok=True)
 
-        print('Gathering report data...')
+        self.log('Gathering report data...')
         report_data = self.fetch_workspace_tasks(start_date)
 
         report = {
@@ -148,16 +149,19 @@ class Asanacomm:
                 report[status].append({
                     'name': task['name'],
                     'description': task['notes'],
-                    'due_on': task['due_on']})
+                    'due_on': task['due_on'] if task['due_on'] else '-1'})
 
-        print('Done!')
+        # Sort planned tasks by due date
+        sorted(report['planned'], key=lambda i: i['due_on'])
 
-        print('\nWriting report to file...')
+        self.log('Done!')
+
+        self.log('\nWriting report to file...')
         with open(file_path, 'w') as out:
             out.write(f'# Progress report for {start_date}\n\n')
 
-            out.write(f'This is the progress report for the team working on \
-                        the {report["project"]} project.\n\n')
+            out.write('This is the progress report for the team working on')
+            out.write(f'the {report["project"]} project.\n\n')
 
             out.write('## Completed Tasks\n\n')
 
@@ -168,12 +172,19 @@ class Asanacomm:
             out.write('## Planned Tasks\n\n')
 
             for task in report['planned']:
-                if task["due_on"]:
-                    out.write(f'\n### {task["name"]}\n\n')
+                if task["due_on"] != '-1':
+                    out.write(f'### {task["name"]}\n\n')
                     out.write(f'> Due: {task["due_on"]}\n\n')
-                    out.write(f'{task["description"]}\n')
+                    out.write(f'{task["description"]}')
+                    if task['description']:
+                        out.write('\n\n')
 
-            out.write('Report generated with <3 by Kathana.')
+            out.write('---\nReport generated with <3 by Kathana.')
 
-        print(f'Done!')
-        print(f'\nReport written here: {Path.joinpath(Path.cwd(), file_path)}')
+        self.log(f'Done!')
+        self.log('\nReport written here:', end=" ")
+        self.log(Path.joinpath(Path.cwd(), file_path))
+
+    def log(self, *args, **kwargs):
+        if self.v:
+            print(*args, **kwargs)
