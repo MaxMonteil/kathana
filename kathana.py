@@ -1,15 +1,16 @@
 import os
-from pprint import pprint
 from resources.asanacomm import Asanacomm
 
 WORKSPACE = 'Accessibility Web Engine'
+OUT_DIR = './'
 
 
 def main():
-    acomm = Asanacomm(os.environ['ASANA_TOKEN'], WORKSPACE)
+    acomm = Asanacomm(os.environ['ASANA_TOKEN'], WORKSPACE, OUT_DIR,
+                      verbose=True)
 
-    for project in acomm.projects:
-        pprint(project, indent=4)
+    acomm.generate_report()
+    acomm.write_report_to_file()
 
 
 if __name__ == '__main__':
