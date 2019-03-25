@@ -122,7 +122,7 @@ class Asanacomm:
         if not start_date:
             start_date = self.get_last_monday()
 
-        file_name = start_date.replace(" ", "") + 'report.md'
+        file_name = start_date.replace(" ", "") + '-report.md'
         file_path = Path.joinpath(self.output_directory, file_name)
 
         if not Path.exists(file_path):
