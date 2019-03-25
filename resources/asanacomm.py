@@ -12,10 +12,17 @@ class Asanacomm:
         token <str> Personal Access Token (PAT) of user
         workspace_name <str> Name of the workspace to analyze
         output_directory <str> Directory in which to ouput report
+        Start_date <str> Date from which to fetch tasks
+        verbose <bool> Whether or not to output progress statements
     '''
 
-    def __init__(self, token, workspace_name, output_directory, v=True):
-        self.v = v
+    def __init__(self, token, workspace_name, output_directory,
+                 start_date=None, verbose=False):
+        self.verbose = verbose
+
+        if not start_date:
+            self.start_date = self.get_last_monday()
+
         self.output_directory = Path(output_directory)
 
         self.log('Connecting to Asana...')
@@ -28,12 +35,20 @@ class Asanacomm:
         if not self.workspace_id:
             raise ValueError(f'There is no "{workspace_name}" workspace.')
 
+        self.report = {}
+
         self.log('\tGathering projects.')
         self.projects = self.fetch_projects()
 
         self.log('Kathana initialization complete.\n')
 
     def init_client(self, token):
+        '''
+        Initializes connection to the Asana client.
+
+        Parameters:
+            token <str> The Personal Access Token (PAT) of the user
+        '''
         client = asana.Client.access_token(token)
         client.options['client_name'] = 'Kathana'
 
@@ -119,24 +134,16 @@ class Asanacomm:
 
         return last_monday.isoformat()
 
-    def generate_report(self, start_date=None):
+    def generate_report(self):
         '''
-        smth
+        Calls all fetching methods to gather tasks in workspace from the start
+        date and generates a report object.
         '''
-        if not start_date:
-            start_date = self.get_last_monday()
-
-        file_name = start_date.replace(" ", "") + '-report.md'
-        file_path = Path.joinpath(self.output_directory, file_name)
-
-        if not Path.exists(file_path):
-            Path.touch(file_path, exist_ok=True)
-
         self.log('Gathering report data...')
-        report_data = self.fetch_workspace_tasks(start_date)
+        report_data = self.fetch_workspace_tasks(self.start_date)
 
-        report = {
-                    'date': start_date,
+        self.report = {
+                    'date': self.start_date,
                     'project': self.workspace,
                     'completed': [],
                     'planned': []
@@ -146,32 +153,46 @@ class Asanacomm:
             for task in project_tasks:
                 status = 'completed' if task['completed'] else 'planned'
 
-                report[status].append({
+                self.report[status].append({
                     'name': task['name'],
                     'description': task['notes'],
                     'due_on': task['due_on'] if task['due_on'] else '-1'})
 
         # Sort planned tasks by due date
-        sorted(report['planned'], key=lambda i: i['due_on'])
+        sorted(self.report['planned'], key=lambda i: i['due_on'])
 
         self.log('Done!')
 
+    def write_report_to_file(self):
+        '''
+        Writes the generated report to the output file given during class
+        initialization.
+        '''
+        if not self.report:
+            raise RuntimeError('self.generate_report has not been run yet.')
+
+        file_name = self.start_date.replace(" ", "") + '-report.md'
+        file_path = Path.joinpath(self.output_directory, file_name)
+
+        if not Path.exists(file_path):
+            Path.touch(file_path, exist_ok=True)
+
         self.log('\nWriting report to file...')
         with open(file_path, 'w') as out:
-            out.write(f'# Progress report for {start_date}\n\n')
+            out.write(f'# Progress report for {self.start_date}\n\n')
 
             out.write('This is the progress report for the team working on')
-            out.write(f'the {report["project"]} project.\n\n')
+            out.write(f'the {self.report["project"]} project.\n\n')
 
             out.write('## Completed Tasks\n\n')
 
-            for task in report['completed']:
+            for task in self.report['completed']:
                 out.write(f'### {task["name"]}\n\n')
                 out.write(f'task["description"]\n\n')
 
             out.write('## Planned Tasks\n\n')
 
-            for task in report['planned']:
+            for task in self.report['planned']:
                 if task["due_on"] != '-1':
                     out.write(f'### {task["name"]}\n\n')
                     out.write(f'> Due: {task["due_on"]}\n\n')
@@ -186,5 +207,11 @@ class Asanacomm:
         self.log(Path.joinpath(Path.cwd(), file_path))
 
     def log(self, *args, **kwargs):
-        if self.v:
+        '''
+        Wrapper for the `print()` function to allow control over verbosity.
+
+        Parameters:
+            Whatever `print()` usually takes
+        '''
+        if self.verbose:
             print(*args, **kwargs)
