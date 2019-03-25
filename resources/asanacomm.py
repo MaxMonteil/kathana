@@ -200,7 +200,8 @@ class Asanacomm:
                     if task['description']:
                         out.write('\n\n')
 
-            out.write('---\nReport generated with <3 by Kathana.')
+            out.write('---\nReport generated with ❤ by [Kathana]')
+            out.write('(https://github.com/MaxMonteil/kithana).')
 
         self.log(f'Done!')
         self.log('\nReport written here:', end=" ")
