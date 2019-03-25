@@ -61,7 +61,7 @@ class Asanacomm:
                     'archived': False
                 })
 
-    def fetch_workspace_tasks(self, since=None):
+    def fetch_workspace_tasks(self, since):
         '''
         Goes through each project in a workspace and fetches the tasks it
         contains going back to the date given by "since".
@@ -71,14 +71,11 @@ class Asanacomm:
         '''
         print('Fetching workspace tasks')
 
-        if not since:
-            since = self.get_last_monday()
-
         for project in self.projects:
             print(f'Fetching tasks in {project["name"]}')
             yield self.fetch_project_tasks(project['gid'], since)
 
-    def fetch_project_tasks(self, project_id, since=None):
+    def fetch_project_tasks(self, project_id, since):
         '''
         Fetches the data of all the tasks in a particular project that were
         completed since the given date.
@@ -87,10 +84,6 @@ class Asanacomm:
             project_id <str> The unique id of the project
             since <str> ISO 8601 format date, gets tasks completed since then
         '''
-
-        if not since:
-            since = self.get_last_monday()
-
         search_params = {
                 'project': project_id,
                 'completed_since': since}
@@ -122,12 +115,15 @@ class Asanacomm:
 
         return last_monday.isoformat()
 
-    def generate_report(self, out_dir, start_date=None):
+    def generate_report(self, start_date=None):
         '''
         smth
         '''
+        if not start_date:
+            start_date = self.get_last_monday()
+
         file_name = start_date.replace(" ", "") + 'report.md'
-        file_path = Path.joinpath(out_dir, file_name)
+        file_path = Path.joinpath(self.output_directory, file_name)
 
         if not Path.exists(file_path):
             Path.touch(file_path, exist_ok=True)
