@@ -3,7 +3,7 @@ import asana
 import datetime
 
 
-class Asanacomm:
+class AsanaService:
     """
     A class to communicate with Asana. It fetches all the tasks in a workspace
     upto a date and generates a markdown report.
