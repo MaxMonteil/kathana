@@ -36,6 +36,11 @@ pipenv install
 
 Run the program with `pipenv run python kathana.py`
 
+### Features
+
+Automatically generate an Asana report from a given date (defaults to last Monday). The
+report is then saved locally and can be emailed too.
+
 ## Deployment
 
 ### Coming Soon
@@ -45,11 +50,13 @@ Run the program with `pipenv run python kathana.py`
 ## Built With
 
 * [python-asana](https://github.com/Asana/python-asana/)
+* [Sendgrid](https://sendgrid.com)
 
 ### Coming Soon
 
-* [Yagmail](https://github.com/kootenpv/yagmail)
 * [Telegram Bot](https://core.telegram.org/bots/api)
+* Dropbox and Google Drive upload
+* Automatice scheduling
 
 ## License
 
