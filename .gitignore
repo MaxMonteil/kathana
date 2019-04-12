@@ -6,7 +6,6 @@ keys/
 .vscode/
 *.swp
 
-
 # Back-end Python API
 venv/
 
@@ -21,4 +20,7 @@ build/
 *.egg-info/
 
 # output files
-*.md
+reports/
+
+# miscellaneous
+.todos.json
