@@ -1,12 +1,10 @@
 """
 Email Service class to send the created markdown report to the given emails.
-
-Parameters:
 """
-import os
-import markdown2
+
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
+import os
 
 
 class EmailService:
@@ -28,14 +26,14 @@ class EmailService:
         to_emails=None,
         cc_emails=None,
         subject=None,
-        md_report=None,
+        report=None,
     ):
         self._client = SendGridAPIClient(os.environ.get('SENDGRID_KEY'))
         self._message = Mail(
             from_email=from_email,
             to_emails=to_emails,
             subject=subject,
-            html_content=markdown2.markdown(md_report),
+            html_content=report,
         )
 
         if cc_emails is not None:

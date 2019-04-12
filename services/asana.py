@@ -2,6 +2,7 @@ from io import StringIO
 from pathlib import Path
 import asana
 import datetime
+import markdown2
 
 
 class AsanaService:
@@ -14,9 +15,10 @@ class AsanaService:
         workspace_name <str> Name of the workspace to analyze
         start_date <str> Date from which to fetch tasks
         verbose <bool> Whether or not to output progress statements
-    Attributes:
-        _client <Asana Client> The connection client for Asana
-        _raw_report <dict> Raw response from the Asana api
+
+    Properties:
+        report <str> Generated report in markdown format
+        report_date <str> Date from which the report was generated
     """
 
     def __init__(self, token, workspace_name, start_date=None, verbose=False):
@@ -39,6 +41,7 @@ class AsanaService:
 
         self._raw_report = {}
         self._md_report = StringIO()
+        self._html_report = None
 
         self._log("\tGathering projects.")
         self._projects = self._fetch_projects()
@@ -57,11 +60,21 @@ class AsanaService:
 
         return client
 
-    def get_report(self):
+    @property
+    def md_report(self):
         """Return the markdown format report."""
         return self._md_report.getvalue()
 
-    def get_report_date(self):
+    @property
+    def html_report(self):
+        """Return the markdown format report."""
+        if self._html_report is None:
+            self._html_report = markdown2.markdown(self.md_report)
+
+        return self._html_report
+
+    @property
+    def report_date(self):
         """Return the date from which the report is generated."""
         return self._start_date
 
@@ -176,8 +189,6 @@ class AsanaService:
         return self
 
     def write_report_to_file(self, output_directory):
-        """
-        """
         if not self._raw_report:
             raise RuntimeError("self.generate_report has not been run yet.")
 
