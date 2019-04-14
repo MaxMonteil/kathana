@@ -27,7 +27,7 @@ def main():
             "mmm114@mail.aub.edu",
         ],
         subject=f'Project UK TechHub report from {asana_service.report_date}',
-        md_report=asana_service.html_report,
+        report=asana_service.html_report,
     )
 
     email_service.send_email()

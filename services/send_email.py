@@ -16,9 +16,9 @@ class EmailService:
     Parameters:
         from_email <str> The email address of the sender
         to_emails <str> or <tuple> The email address(es) of the recipient(s)
+        cc_emails <list> collection of emails addresss to CC with the email
         subject <str> Subject of the email
-        plain_content <str> Plain text body of the email
-        html_content <str> HTML formatted body of the email
+        report <str> HTML formatted body of the email
     """
     def __init__(
         self,
