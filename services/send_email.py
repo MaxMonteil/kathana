@@ -20,15 +20,11 @@ class EmailService:
         subject <str> Subject of the email
         report <str> HTML formatted body of the email
     """
+
     def __init__(
-        self,
-        from_email=None,
-        to_emails=None,
-        cc_emails=None,
-        subject=None,
-        report=None,
+        self, from_email=None, to_emails=None, cc_emails=None, subject=None, report=None
     ):
-        self._client = SendGridAPIClient(os.environ.get('SENDGRID_KEY'))
+        self._client = SendGridAPIClient(os.environ.get("SENDGRID_KEY"))
         self._message = Mail(
             from_email=from_email,
             to_emails=to_emails,
