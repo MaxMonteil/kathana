@@ -21,7 +21,10 @@ class AsanaService:
         report_date <str> Date from which the report was generated
     """
 
-    def __init__(self, token, workspace_name, start_date=None, verbose=False):
+    FORMATS = ["md", "html"]
+    DEFAULT_FORMAT = FORMATS[0]
+
+    def __init__(self, token, workspace_name, start_date=None, verbose=True):
         self._verbose = verbose
 
         if start_date is None:
@@ -39,9 +42,9 @@ class AsanaService:
         if not self._workspace_id:
             raise ValueError(f'There is no "{workspace_name}" workspace.')
 
-        self._raw_report = {}
-        self._md_report = StringIO()
-        self._html_report = None
+        self._reports = {"raw": {}, "md": StringIO(), "html": None}
+        self._reports["md"] = StringIO()
+        self._reports["html"] = None
 
         self._log("\tGathering projects.")
         self._projects = self._fetch_projects()
@@ -91,8 +94,6 @@ class AsanaService:
         for workspace in all_workspaces:
             if workspace["name"] == workspace_name:
                 return workspace["gid"]
-
-        return None
 
     def _fetch_projects(self):
         """
@@ -162,7 +163,7 @@ class AsanaService:
         self._log("Gathering report data...")
         report_data = self._fetch_workspace_tasks(self._start_date)
 
-        self._raw_report = {
+        self._report["raw"] = {
             "date": self._start_date,
             "project": self._workspace,
             "completed": [],
@@ -173,7 +174,7 @@ class AsanaService:
             for task in project_tasks:
                 status = "completed" if task["completed"] else "planned"
 
-                self._raw_report[status].append(
+                self._report["raw"][status].append(
                     {
                         "name": task["name"],
                         "description": task["notes"],
@@ -182,24 +183,21 @@ class AsanaService:
                 )
 
         # Sort planned tasks by due date
-        sorted(self._raw_report["planned"], key=lambda i: i["due_on"])
+        sorted(self._report["raw"]["planned"], key=lambda i: i["due_on"])
 
         self._log("Done!")
 
         return self
 
-    def write_report_to_file(self, output_directory):
-        if not self._raw_report:
-            raise RuntimeError("self.generate_report has not been run yet.")
-
+    def write_report_to_file(self, report, out_dir):
         file_name = self._start_date.replace(" ", "") + "-report.md"
-        file_path = Path.joinpath(Path(output_directory), file_name)
+        file_path = Path.joinpath(Path(out_dir), file_name)
 
         if not Path.exists(file_path):
             Path.touch(file_path, exist_ok=True)
 
         # initialize (if not already done) the md format report from the raw report
-        self._create_md_report()
+        # self._create_md_report()
 
         self._log("\nWriting report to file...")
         with open(file_path, "w") as out:
@@ -222,11 +220,11 @@ class AsanaService:
             self._md_report.write(
                 "This is the progress report for the team working on the "
             )
-            self._md_report.write(f'{self._raw_report["project"]} project.\n\n')
+            self._md_report.write(f'{self._report["raw"]["project"]} project.\n\n')
 
             self._md_report.write("## Completed Tasks\n\n")
 
-            for task in self._raw_report["completed"]:
+            for task in self._report["raw"]["completed"]:
                 self._md_report.write(f'### {task["name"]}\n\n')
                 self._md_report.write(f'{task["description"]}')
                 if task["description"]:
@@ -234,7 +232,7 @@ class AsanaService:
 
             self._md_report.write("## Planned Tasks\n\n")
 
-            for task in self._raw_report["planned"]:
+            for task in self._report["raw"]["planned"]:
                 if task["due_on"] != "-1":
                     self._md_report.write(f'### {task["name"]}\n\n')
                     self._md_report.write(f'> Due: {task["due_on"]}\n\n')
@@ -254,3 +252,9 @@ class AsanaService:
         """
         if self._verbose:
             print(*args, **kwargs)
+
+    def __getitem__(self, key):
+        if key not in self._reports:
+            raise KeyError
+
+        return self._reports[key]
