@@ -1,3 +1,4 @@
+from datetime import date
 from pathlib import Path
 from services import AsanaService, EmailService, write_report_to_file
 import argparse
@@ -10,11 +11,17 @@ DEFAULT_FORMAT = AsanaService.DEFAULT_FORMAT
 
 
 def main(args):
-    asana_service = AsanaService(
-        token=os.environ["ASANA_TOKEN"],
-        workspace_name=WORKSPACE,
-        verbose=not args.quiet,
-    )
+    try:
+        date.fromisoformat(args.start_date)
+
+        asana_service = AsanaService(
+            token=os.environ["ASANA_TOKEN"],
+            workspace_name=WORKSPACE,
+            start_date=args.start_date,
+            verbose=not args.quiet,
+        )
+    except ValueError:
+        return print(f"Invalid date format: {args.start_date}\nExpected: YYYY-MM-DD")
 
     asana_service.generate_report()
 
@@ -65,13 +72,12 @@ def parse_arguments():
     parser.add_argument(
         "-w",
         "--write",
-        help="write report to dir or file, filename defaults "
-        "to <start_date>_report.<format>",
+        help="write report to dir or file, filename defaults to <start_date>_report.<format>",
         metavar="FILE|DIR",
     )
 
     parser.add_argument(
-        "-o", "--output", help="print report to stdout", action="store_true"
+        "-p", "--print", help="print report to stdout", action="store_true"
     )
 
     parser.add_argument(
@@ -79,6 +85,13 @@ def parse_arguments():
         "--email",
         help="send report to receiver and cc emails",
         action="store_true",
+    )
+
+    parser.add_argument(
+        "-s",
+        "--start-date",
+        help="Date from which to start generating report, defaults to last Monday " +
+        "(format YYYY-MM-DD)",
     )
 
     return parser.parse_args()
