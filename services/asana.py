@@ -147,7 +147,7 @@ class AsanaService:
     def _get_last_monday(self):
         """
         Finds the date of the last Monday and returns it as an ISO 8601 format
-        string.
+        string. YYYY-MM-DD
         """
         today = datetime.date.today()
 
