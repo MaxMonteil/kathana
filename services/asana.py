@@ -13,7 +13,7 @@ class AsanaService:
     Parameters:
         token <str> Personal Access Token (PAT) of user
         workspace_name <str> Name of the workspace to analyze
-        start_date <str> Date from which to fetch tasks
+        start_date <str> Date from which to fetch tasks (format: YYYY-MM-DD)
         verbose <bool> Whether or not to output progress statements
 
     Properties:
