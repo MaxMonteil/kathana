@@ -25,7 +25,7 @@ def main(args):
             report=asana_service[args.output],
             report_format=args.output,
             out_dir=args.output_path,
-            start_date=asana_service.start_date,
+            report_date=asana_service.report_date,
         )
 
     if args.email:
