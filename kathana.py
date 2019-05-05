@@ -1,6 +1,4 @@
-from datetime import date
-from pathlib import Path
-from services import AsanaService, EmailService, write_report_to_file
+from services import AsanaService, EmailService, WritingService
 import argparse
 import os
 
@@ -11,28 +9,22 @@ DEFAULT_FORMAT = AsanaService.DEFAULT_FORMAT
 
 
 def main(args):
-    try:
-        date.fromisoformat(args.start_date)
-
-        asana_service = AsanaService(
-            token=os.environ["ASANA_TOKEN"],
-            workspace_name=WORKSPACE,
-            start_date=args.start_date,
-            verbose=not args.quiet,
-        )
-    except ValueError:
-        return print(f"Invalid date format: {args.start_date}\nExpected: YYYY-MM-DD")
+    asana_service = AsanaService(
+        token=os.environ["ASANA_TOKEN"],
+        workspace_name=WORKSPACE,
+        start_date=args.start_date,
+        verbose=not args.quiet,
+    )
 
     asana_service.generate_report()
 
-    if args.output:
-        print(asana_service[args.format])
-
-    if args.write:
-        write_report_to_file(
-            report=asana_service[args.format],
-            report_format=args.format,
-            out_dir=(Path(args.write) or OUT_DIR),
+    if args.output_path == 'stdout':
+        print(asana_service[args.output])
+    else:
+        WritingService.write(
+            report=asana_service[args.output],
+            report_format=args.output,
+            out_dir=args.output_path,
             start_date=asana_service.start_date,
         )
 
@@ -58,26 +50,20 @@ def main(args):
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Generate an Asana report.")
     parser.add_argument(
-        "-q", "--quiet", help="supress logging messages", action="store_true"
+        "-q", "--quiet", help="Supress logging messages", action="store_true"
     )
 
     parser.add_argument(
-        "-f",
-        "--format",
-        help="format to in which to save or send the report",
+        "--output",
+        help="Format in which to generate the report, defaults to markdown",
         choices=REPORT_FORMATS,
         default=DEFAULT_FORMAT,
     )
 
     parser.add_argument(
-        "-w",
-        "--write",
-        help="write report to dir or file, filename defaults to <start_date>_report.<format>",
-        metavar="FILE|DIR",
-    )
-
-    parser.add_argument(
-        "-p", "--print", help="print report to stdout", action="store_true"
+        "--output-path",
+        help="The file path to ouput the results. Default is 'stdout'",
+        default="stdout",
     )
 
     parser.add_argument(
