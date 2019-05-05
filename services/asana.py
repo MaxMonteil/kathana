@@ -1,6 +1,7 @@
 from io import StringIO
 import asana
 import datetime
+import json
 import markdown2
 
 
@@ -20,10 +21,8 @@ class AsanaService:
         report_date <str> Date from which the report was generated
     """
 
-    MD = "md"
-    HTML = "html"
-    FORMATS = [MD, HTML]
-    DEFAULT_FORMAT = MD
+    FORMATS = ["md", "html", "json"]
+    DEFAULT_FORMAT = "md"
 
     def __init__(self, token, workspace_name, start_date=None, verbose=True):
         self._log = print if verbose else lambda *a, **k: None
@@ -69,6 +68,11 @@ class AsanaService:
         client.options["client_name"] = "Kathana"
 
         return client
+
+    @property
+    def json_report(self):
+        """Generated report in json format."""
+        return json.dumps(self._report)
 
     @property
     def md_report(self):
@@ -235,8 +239,9 @@ class AsanaService:
         if key not in self.FORMATS:
             raise KeyError
 
-        if key == self.MD:
+        if key == "md":
             return self.md_report
-
-        if key == self.HTML:
+        elif key == "html":
             return self.html_report
+        else:
+            return self.json_report
