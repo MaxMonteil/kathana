@@ -26,7 +26,7 @@ class AsanaService:
     DEFAULT_FORMAT = MD
 
     def __init__(self, token, workspace_name, start_date=None, verbose=True):
-        self._verbose = verbose
+        self._log = print if verbose else lambda *a, **k: None
 
         if start_date is None:
             self._start_date = self._get_last_monday()
@@ -230,16 +230,6 @@ class AsanaService:
 
             self._md_report.write("---\nReport generated with ❤ by [Kathana]")
             self._md_report.write("(https://github.com/MaxMonteil/kathana).")
-
-    def _log(self, *args, **kwargs):
-        """
-        Wrapper for the `print()` function to allow control over verbosity.
-
-        Parameters:
-            Whatever `print()` usually takes
-        """
-        if self._verbose:
-            print(*args, **kwargs)
 
     def __getitem__(self, key):
         if key not in self.FORMATS:
