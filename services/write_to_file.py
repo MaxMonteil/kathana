@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-def write_report_to_file(
+def write(
     self, *, report, report_format, out_dir, start_date, verbose=True
 ):
     out_dir = Path(out_dir)
