@@ -47,7 +47,7 @@ class AsanaService:
         self._workspace_id = self._fetch_workspace_id(workspace_name)
 
         if not self._workspace_id:
-            raise ValueError(f'There is no "{workspace_name}" workspace.')
+            raise ValueError(f'There is no workspace named "{workspace_name}".')
 
         self._report = {}
         self._md_report = StringIO()
