@@ -1,5 +1,4 @@
 from io import StringIO
-from pathlib import Path
 import asana
 import datetime
 import markdown2
@@ -21,8 +20,10 @@ class AsanaService:
         report_date <str> Date from which the report was generated
     """
 
-    FORMATS = ["md", "html"]
-    DEFAULT_FORMAT = FORMATS[0]
+    MD = "md"
+    HTML = "html"
+    FORMATS = [MD, HTML]
+    DEFAULT_FORMAT = MD
 
     def __init__(self, token, workspace_name, start_date=None, verbose=True):
         self._verbose = verbose
@@ -30,7 +31,13 @@ class AsanaService:
         if start_date is None:
             self._start_date = self._get_last_monday()
         else:
-            self._start_date = start_date
+            try:
+                datetime.date.fromisoformat(start_date)
+                self._start_date = start_date
+            except ValueError as e:
+                raise Exception(
+                    f"Invalid date format: {start_date}\nExpected: YYYY-MM-DD"
+                ) from e
 
         self._log("Connecting to Asana...")
         self._client = self._init_client(token)
@@ -42,9 +49,9 @@ class AsanaService:
         if not self._workspace_id:
             raise ValueError(f'There is no "{workspace_name}" workspace.')
 
-        self._reports = {"raw": {}, "md": StringIO(), "html": None}
-        self._reports["md"] = StringIO()
-        self._reports["html"] = None
+        self._report = {}
+        self._md_report = StringIO()
+        self._html_report = None
 
         self._log("\tGathering projects.")
         self._projects = self._fetch_projects()
@@ -65,12 +72,12 @@ class AsanaService:
 
     @property
     def md_report(self):
-        """Return the markdown format report."""
+        """Generated report in markdown format."""
         return self._md_report.getvalue()
 
     @property
     def html_report(self):
-        """Return the markdown format report."""
+        """Generated report in HTML format."""
         if self._html_report is None:
             self._html_report = markdown2.markdown(self.md_report)
 
@@ -163,7 +170,7 @@ class AsanaService:
         self._log("Gathering report data...")
         report_data = self._fetch_workspace_tasks(self._start_date)
 
-        self._report["raw"] = {
+        self._report = {
             "date": self._start_date,
             "project": self._workspace,
             "completed": [],
@@ -174,7 +181,7 @@ class AsanaService:
             for task in project_tasks:
                 status = "completed" if task["completed"] else "planned"
 
-                self._report["raw"][status].append(
+                self._report[status].append(
                     {
                         "name": task["name"],
                         "description": task["notes"],
@@ -183,29 +190,10 @@ class AsanaService:
                 )
 
         # Sort planned tasks by due date
-        sorted(self._report["raw"]["planned"], key=lambda i: i["due_on"])
+        sorted(self._report["planned"], key=lambda i: i["due_on"])
 
+        self._create_md_report()
         self._log("Done!")
-
-        return self
-
-    def write_report_to_file(self, report, out_dir):
-        file_name = self._start_date.replace(" ", "") + "-report.md"
-        file_path = Path.joinpath(Path(out_dir), file_name)
-
-        if not Path.exists(file_path):
-            Path.touch(file_path, exist_ok=True)
-
-        # initialize (if not already done) the md format report from the raw report
-        # self._create_md_report()
-
-        self._log("\nWriting report to file...")
-        with open(file_path, "w") as out:
-            out.write(self._md_report.getvalue())
-
-        self._log(f"Done!")
-        self._log("\nReport written here:", end=" ")
-        self._log(Path.joinpath(Path.cwd(), file_path))
 
     def _create_md_report(self):
         """
@@ -220,11 +208,11 @@ class AsanaService:
             self._md_report.write(
                 "This is the progress report for the team working on the "
             )
-            self._md_report.write(f'{self._report["raw"]["project"]} project.\n\n')
+            self._md_report.write(f'{self._report["project"]} project.\n\n')
 
             self._md_report.write("## Completed Tasks\n\n")
 
-            for task in self._report["raw"]["completed"]:
+            for task in self._report["completed"]:
                 self._md_report.write(f'### {task["name"]}\n\n')
                 self._md_report.write(f'{task["description"]}')
                 if task["description"]:
@@ -232,7 +220,7 @@ class AsanaService:
 
             self._md_report.write("## Planned Tasks\n\n")
 
-            for task in self._report["raw"]["planned"]:
+            for task in self._report["planned"]:
                 if task["due_on"] != "-1":
                     self._md_report.write(f'### {task["name"]}\n\n')
                     self._md_report.write(f'> Due: {task["due_on"]}\n\n')
@@ -254,7 +242,11 @@ class AsanaService:
             print(*args, **kwargs)
 
     def __getitem__(self, key):
-        if key not in self._reports:
+        if key not in self.FORMATS:
             raise KeyError
 
-        return self._reports[key]
+        if key == self.MD:
+            return self.md_report
+
+        if key == self.HTML:
+            return self.html_report
